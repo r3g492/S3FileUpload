@@ -1,0 +1,25 @@
+plugins {
+	id 'org.springframework.boot' version '2.6.3'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'java'
+}
+
+group = 'com.gwk'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+repositories {
+	mavenCentral()
+}
+//implementation 'software.amazon.awssdk:s3control'
+dependencies {
+	implementation('org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE')
+	implementation 'org.springframework.boot:spring-boot-starter'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation platform('software.amazon.awssdk:bom:2.15.0')
+	implementation 'software.amazon.awssdk:s3'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
