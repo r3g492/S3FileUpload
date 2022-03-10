@@ -1,11 +1,19 @@
 package com.gwk.s3FileUpload;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.*;
 import java.util.List;
 
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -16,21 +24,41 @@ import software.amazon.awssdk.services.s3.model.*;
 @SpringBootApplication
 public class S3FileUploadApplication {
 	public static void main(String[] args) throws IOException, InterruptedException {
+		//to use this app, do cmd 'aws configure' and apply your access key and secret key.
+		//you also can use application.yml.
+		/*server:
+		port: 8080
+		cloud:
+		aws:
+		stack:
+		auto: false
+		region:
+		static: ap-northeast-2 # AWS Region*/
+		String args0;
+		String root = "D:\\TEST";
+		if (args.length != 0) {
+			args0 = args[0];
+			System.out.println(args0);
+			args0 = args0.replaceAll("/", "\\");
+			File file0 = new File(args0);
+			if (file0.exists()) {
+				System.out.println("route applied!");
+				root = args0;
+			}
+		}
+
+		//create s3 object
 		S3Client client = S3Client.builder()
 				.region(Region.AP_NORTHEAST_2)
 				.build();
+		//register watch service on root path. example of 'root' is an ML data storage folder.
 
-		//register watch service on dir path.
-		String dir = "D:/TEST";
 		WatchService service = FileSystems.getDefault().newWatchService();
-		Path path = Paths.get(dir);
+		Path path = Paths.get(root);
 		path.register(service,
 				StandardWatchEventKinds.ENTRY_CREATE,
 				StandardWatchEventKinds.ENTRY_DELETE,
 				StandardWatchEventKinds.ENTRY_MODIFY);
-
-		//create a file object with pathname
-		//File myObj = new File("D:\\TEST\\test.txt");
 
 		while(true) {
 			WatchKey key = service.take();
@@ -40,25 +68,26 @@ public class S3FileUploadApplication {
 				WatchEvent.Kind<?> kind = event.kind();
 				Path pth = (Path) event.context();
 				if (kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
-					System.out.println("생성 : " + pth.getFileName());
+					//create event
+					//set bucketName ... replace gunwoo-demo-datapipeline with your bucket name.
 					String bucketName = "gunwoo-demo-datapipeline";
 					String fileName = pth.toString();
-					String filePath = "D:\\TEST\\" + fileName;
+					String filePath = root + "\\" + fileName;
 					PutObjectRequest request = PutObjectRequest.builder()
 							.bucket(bucketName)
-							.key(fileName)
+							.key(root + "/" + fileName)
 							.build();
-					System.out.println("!"+ filePath);
-					Path testPath = Paths.get(filePath);
-					client.putObject(request, RequestBody.fromFile(testPath));
-					//client.putObject(request, RequestBody.fromFile(new File(filePath)));
-					//client.putObject(request, RequestBody.fromFile(new File("D:\\TEST\\test.txt")));
-					//client.putObject(request, RequestBody.fromFile(myObj));
 
+					Path testPath = Paths.get(filePath);
+					try {
+						client.putObject(request, RequestBody.fromFile(testPath));
+					} catch (Exception e) {
+						System.out.println("File uploading Failed.");
+					}
 				} else if (kind.equals(StandardWatchEventKinds.ENTRY_DELETE)) {
-					System.out.println("삭제 : " + pth.getFileName());
+					//delete event
 				} else if (kind.equals(StandardWatchEventKinds.OVERFLOW)) {
-					System.out.println("OVERFLOW");
+					//overflow event
 				}
 			}
 			if (!key.reset()) {
@@ -66,9 +95,7 @@ public class S3FileUploadApplication {
 			}
 		}
 		service.close();
-
 	}
-
 	//create bucket
 	public static void createBucket(S3Client s3Client, String bucketName, Region region) {
 		try {
