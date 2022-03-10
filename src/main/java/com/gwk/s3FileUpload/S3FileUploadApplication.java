@@ -1,25 +1,15 @@
 package com.gwk.s3FileUpload;
-
-import com.amazonaws.HttpMethod;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
-import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.*;
 import java.util.List;
 
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
-
-//import java.io.File;
 
 @SpringBootApplication
 public class S3FileUploadApplication {
@@ -53,6 +43,10 @@ public class S3FileUploadApplication {
 				.build();
 		//register watch service on root path. example of 'root' is an ML data storage folder.
 
+		//set bucketName ... replace gunwoo-demo-datapipeline with your bucket name.
+		String bucketName = "gunwoo-demo-datapipeline";
+
+
 		WatchService service = FileSystems.getDefault().newWatchService();
 		Path path = Paths.get(root);
 		path.register(service,
@@ -69,8 +63,7 @@ public class S3FileUploadApplication {
 				Path pth = (Path) event.context();
 				if (kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
 					//create event
-					//set bucketName ... replace gunwoo-demo-datapipeline with your bucket name.
-					String bucketName = "gunwoo-demo-datapipeline";
+
 					String fileName = pth.toString();
 					String filePath = root + "\\" + fileName;
 					PutObjectRequest request = PutObjectRequest.builder()
