@@ -8,7 +8,7 @@
 
 ## What is does 
 
-* watch a local folder
+* watchs a local folder
 * whenever new file is added to that folder,
 * upload the file to my s3 bucket.
 
